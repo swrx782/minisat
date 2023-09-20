@@ -1,0 +1,3 @@
+・makeによってできた実行ファイル	/root/minisat/build/release/bin/minisat
+・問題のあるディレクトリ		/root/minisat/working/problem
+・作業するディレクトリの場所		/root/minisat/working
