@@ -40,6 +40,13 @@ class SimpSolver : public Solver {
     SimpSolver();
     ~SimpSolver();
 
+    // 読んだ文字が最後まで読めているかを確認し、幾つに区切れるかを返す
+    void    check_string(char* str, int max_len);
+    // ファイルを読んで復元のための情報を格納する
+    void    read_intervention(const char* intervention);
+    // ファイルから１行読んで「タグ(１文字) 数値」の形式になっているかを確認しながら値を取得する
+    int SimpSolver::getInterventionValue(FILE* f, char tag);
+
     // Problem specification:
     //
     Var     newVar    (lbool upol = l_Undef, bool dvar = true);

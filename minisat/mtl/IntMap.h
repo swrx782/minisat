@@ -29,6 +29,7 @@ namespace Minisat {
     
     template<class K, class V, class MkIndex = MkIndexDefault<K> >
     class IntMap {
+    public:
         vec<V>   map;
         MkIndex  index;
     public:
@@ -52,6 +53,10 @@ namespace Minisat {
         void     clear  (bool dispose = false) { map.clear(dispose); }
         void     moveTo (IntMap& to)           { map.moveTo(to.map); to.index = index; }
         void     copyTo (IntMap& to) const     { map.copyTo(to.map); to.index = index; }
+
+        // restoreのために使う
+        typename vec<V>::Size     size     (void) const   { return map.size(); }
+        int      capacity (void) const   { return map.capacity(); }
     };
 
 

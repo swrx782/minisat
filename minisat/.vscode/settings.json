@@ -1,0 +1,23 @@
+{
+    "files.associations": {
+        "__bit_reference": "cpp",
+        "__split_buffer": "cpp",
+        "string": "cpp",
+        "vector": "cpp",
+        "__hash_table": "cpp",
+        "array": "cpp",
+        "bitset": "cpp",
+        "deque": "cpp",
+        "initializer_list": "cpp",
+        "queue": "cpp",
+        "span": "cpp",
+        "string_view": "cpp",
+        "unordered_map": "cpp",
+        "random": "cpp",
+        "cstdint": "cpp",
+        "stack": "cpp",
+        "iosfwd": "cpp",
+        "__string": "cpp",
+        "*.tcc": "cpp"
+    }
+}

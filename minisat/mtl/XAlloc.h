@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <errno.h>
 #include <stdlib.h>
+#include <stdio.h> // printfのため
 
 namespace Minisat {
 
@@ -32,6 +33,7 @@ namespace Minisat {
 class OutOfMemoryException{};
 static inline void* xrealloc(void *ptr, size_t size)
 {
+    // printf("xrealloc\n");
     void* mem = realloc(ptr, size);
     if (mem == NULL && errno == ENOMEM){
         throw OutOfMemoryException();

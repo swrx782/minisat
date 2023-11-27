@@ -31,6 +31,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "minisat/mtl/Map.h"
 #include "minisat/mtl/Alloc.h"
 
+#include <stdio.h> //printfを使えるように
+
 namespace Minisat {
 
 //=================================================================================================
@@ -58,7 +60,6 @@ struct Lit {
     bool operator != (Lit p) const { return x != p.x; }
     bool operator <  (Lit p) const { return x < p.x;  } // '<' makes p, ~p adjacent in the ordering.
 };
-
 
 inline  Lit  mkLit     (Var var, bool sign) { Lit p; p.x = var + var + (int)sign; return p; }
 inline  Lit  operator ~(Lit p)              { Lit q; q.x = p.x ^ 1; return q; }
@@ -92,6 +93,7 @@ class LSet : public IntSet<Lit, MkIndexLit>{};
 //       fragile unfortunately.
 
 class lbool {
+public:
     uint8_t value;
 
 public:
@@ -116,6 +118,9 @@ public:
 
     friend int   toInt  (lbool l);
     friend lbool toLbool(int   v);
+
+    // valueを受け取る関数(restoreに使う)
+    uint8_t get_value() {return value;}
 };
 inline int   toInt  (lbool l) { return l.value; }
 inline lbool toLbool(int   v) { return lbool((uint8_t)v);  }
@@ -234,6 +239,7 @@ public:
 const CRef CRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
 class ClauseAllocator
 {
+ public:
     RegionAllocator<uint32_t> ra;
 
     static uint32_t clauseWord32Size(int size, bool has_extra){
@@ -333,6 +339,7 @@ public:
 template<class K, class Vec, class Deleted, class MkIndex = MkIndexDefault<K> >
 class OccLists
 {
+ public:
     IntMap<K, Vec,  MkIndex> occs;
     IntMap<K, char, MkIndex> dirty;
     vec<K>                   dirties;

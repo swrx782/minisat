@@ -32,10 +32,12 @@ namespace Minisat {
 template<class T>
 class RegionAllocator
 {
+ public:
     T*        memory;
-    uint32_t  sz;
-    uint32_t  cap;
-    uint32_t  wasted_;
+ public:
+    mutable uint32_t  sz;
+    mutable uint32_t  cap;
+    mutable uint32_t  wasted_;
 
     void capacity(uint32_t min_cap);
 
@@ -85,6 +87,7 @@ class RegionAllocator
 template<class T>
 void RegionAllocator<T>::capacity(uint32_t min_cap)
 {
+    // printf("RegionAllocator\n");
     if (cap >= min_cap) return;
 
     uint32_t prev_cap = cap;

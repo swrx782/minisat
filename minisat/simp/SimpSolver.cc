@@ -77,6 +77,66 @@ SimpSolver::~SimpSolver()
 {
 }
 
+// 読んだ文字が最後(改行)まで読めているかを確認し改行文字を消す
+void SimpSolver::check_string(char* str, int max_len){
+    bool check_null = false;
+    for (int i=0;i<max_len;i++) if (str[i] == '\n') {str[i] = '\0'; check_null = true;}
+    if (!check_null) {printf("error:Overflowing with characters (str=%s)\n", str); exit(1);}
+}
+
+// ファイルから１行読んで「タグ(１文字) 数値」の形式になっているかを確認しながら値を取得する
+int SimpSolver::getInterventionValue(FILE* f, char tag){
+
+    const int MAX_LEN = 100;    //終端文字を含む文字列の最大の長さ
+    char str[MAX_LEN];
+    char *ptr;                  // 分割した文字列を代入する
+
+    fgets(str, MAX_LEN, f);
+
+    // 文字列を取得して改行まで読めたか確認
+    check_string(str, MAX_LEN);
+
+    // 先頭要素がタグと同じか確認
+    ptr = strtok(str, " ");
+    if (strncmp(str,  &tag, 1) != 0)
+        {printf("error:先頭のタグが無効です(%cであるはずが%sになっています)\n", tag, ptr); exit(1);}
+    
+    return atoi(strtok(NULL, " "));
+}
+
+// ファイルを読み込んで介入のタイミングやどのような介入をするかを変数に入れる
+void SimpSolver::read_intervention(const char* intervention){
+    if (intervention) {
+        FILE* f = fopen(intervention, "r");
+        if (f == NULL) {printf("ファイルオープンに失敗しました%d\n", intervention); exit (1);}
+        const int MAX_LEN = 100; //終端文字を含む文字列の最大の長さ
+        char str[MAX_LEN];
+        char *ptr; // 分割した文字列を代入する
+
+        // 介入の回数を読み取る
+        int n_intervention = getInterventionValue(f, 'i');
+
+        for (int i=0;i<n_intervention;i++){
+
+            // i回目の介入のタイミングを読み取る            
+            int timing_i = getInterventionValue(f, 't');
+
+            // i回目の介入の変数選択を読み取る
+            int pick_i = getInterventionValue(f, 'p');
+
+            // printf("t_i=%d, p_i=%d\n", timing_i, pick_i);
+
+            // 介入と変数選択の情報をソルバー内の情報に加える
+            usr_interventions.push(timing_i);
+            usr_picks.push(pick_i);
+        }
+
+    fclose(f);
+    }
+
+    usr_interventions.push(-1); // 最後の介入をした後に変な介入をさせないように(オプションで指定がない場合の処理としても使われる)
+}
+
 
 Var SimpSolver::newVar(lbool upol, bool dvar) {
     Var v = Solver::newVar(upol, dvar);

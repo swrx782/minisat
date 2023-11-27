@@ -35,9 +35,11 @@ namespace Minisat {
 // ヒープ領域:動的に確保と解放を繰り返せるメモリ領域
 template<class K, class Comp, class MkIndex = MkIndexDefault<K> >
 class Heap {
-    vec<K>                heap;     // Heap of Keys
+  public:
     IntMap<K,int,MkIndex> indices;  // Each Key's position (index) in the Heap
+    vec<K>                heap;     // Heap of Keys
     Comp                  lt;       // The heap is a minimum-heap with respect to this comparator
+  private:
 
     // Index "traversal"(横断) functions
     static inline int left  (int i) { return i*2+1; }

@@ -79,7 +79,7 @@ int main(int argc, char** argv)
         // 0だとなし、2にするとガーベジコレクションの情報とかも出力される
         // 毎回オプション指定が面倒ならここで指定できそう
         // 証明を吐かせるかどうかの変数はS.verbosityで
-        IntOption    verb   ("MIAN", "verb",   "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+        IntOption    verb   ("MIAN", "verb",   "Verbosity level (-1=custom, 0=silent, 1=some, 2=more).", 1, IntRange(-1, 2));
         // -no-preで209.cnf,test.cnfを解かせると正しい証明になる
         BoolOption   pre    ("MAIN", "pre",    "Completely turn on/off any preprocessing.", true);
         BoolOption   solve  ("MAIN", "solve",  "Completely turn on/off solving after preprocessing.", true);
@@ -89,7 +89,11 @@ int main(int argc, char** argv)
         BoolOption   strictp("MAIN", "strict", "Validate DIMACS header during parsing.", false);
         // 証明を吐かせるかどうかのオプション
         // 節を作るたびに吐かせているのでUNSATでない場合も証明の書き込みを行う
-        StringOption proof ("MAIN", "proof", "If given, write the proof to this file(proof=column of lemmas).");
+        StringOption proof          ("MAIN", "proof", "If given, write the proof to this file(proof=column of lemmas).");
+        // 復元する情報を入れておくファイル
+        StringOption restore        ("MAIN", "restore", "If given, write the information for restoration to this file.");
+        // 介入の情報を入れておくファイル
+        StringOption intervention   ("MAIN", "intervention", "If given, get the information for interventin from this file.");
 
         // オプション引数の解析(どこまでやってるかは後で確認)
         parseOptions(argc, argv, true); // -> utils/Option.h -> utils/Options.cc
@@ -124,6 +128,11 @@ int main(int argc, char** argv)
         // S.proof_fileがNULLの場合にfprintfをしようとするとエラーが起きるので注意
         // if (S.proof_file) fprintf(S.proof_file, "cpuTime()=%f\n", cpuTime());
         // if (S.proof_file) fprintf(S.proof_file, "cpuTime()=%f\n", cpuTime());
+        S.restore_file = restore;
+        
+        // 介入の情報を読み込む(オプションでファイルを指定していない場合は何も介入をさせない処理を行う)
+        S.read_intervention((const char*)intervention);
+        S.prob = argv[1];
 
         
         solver = &S;
@@ -159,7 +168,7 @@ int main(int argc, char** argv)
         // parse_DIMACSを見ながら節がどのように格納されているか見る(8/7)
         // printf("nassigns=%d\n", S.nAssigns());
         // nAssignsが変わるのはここ
-        parse_DIMACS(in, S, (bool)strictp); // -> core/Dimacs.h
+        parse_DIMACS(in, S, (bool)strictp); // -> core/Dimacs.h 多分問題を読んでいる
         gzclose(in);
         // printf("nassigns=%d\n", S.nAssigns());
         // printf("parse_DIMACS()を実行しました\n");
@@ -219,7 +228,7 @@ int main(int argc, char** argv)
         if (dimacs && ret == l_Undef)
             S.toDimacs((const char*)dimacs);
 
-        if (S.verbosity > 0){
+        if (S.verbosity > 0 || S.verbosity == -1){
             S.printStats();
             printf("\n"); }
         printf(ret == l_True ? "SATISFIABLE\n" : ret == l_False ? "UNSATISFIABLE\n" : "INDETERMINATE\n");

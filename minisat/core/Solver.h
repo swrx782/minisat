@@ -28,6 +28,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "minisat/utils/Options.h"
 #include "minisat/core/SolverTypes.h"
 
+// string型のために使う
+#include<string>
+using namespace std;
+
 
 namespace Minisat {
 
@@ -35,11 +39,14 @@ namespace Minisat {
 // Solver -- the main class:
 
 class Solver {
+// publicに載せている変数、関数はmain.ccでも使えるもの？
+// protectedに載っていてもsimpsolverでは使用可能
 public:
 
     // Constructor/Destructor:
     //
     Solver();
+    // virtualをつけると派生クラスで再定義ができる
     virtual ~Solver();
 
     // Problem specification:
@@ -80,10 +87,21 @@ public:
     void    toDimacs     (FILE* f, Clause& c, vec<Var>& map, Var& max);
 
     // Convenience versions of 'toDimacs()':
+    // この４つはインライン関数として定義（solver.hの下の方で定義される）
     void    toDimacs     (const char* file);
     void    toDimacs     (const char* file, Lit p);
     void    toDimacs     (const char* file, Lit p, Lit q);
     void    toDimacs     (const char* file, Lit p, Lit q, Lit r);
+
+    // ソルバーの状態をファイルに書き込む
+    // 実際に関数定義までしなくてもmakeは成功するっぽい => やっぱり必要かも
+    void     print_restore(); // -> solver.cc
+    // ファイルからソルバーの状態を変える
+    char*    getStrOfValue(FILE* f, char* prefix); // 文字列から先頭要素を取り除いて数値を文字列の状態で返す
+    uint64_t stoui64(char* str); // 文字列型の数値を受け取ってuint64_t型の数値を返す
+    uint32_t stoui32(char* str); // 文字列型の数値を受け取ってuint64_t型の数値を返す
+     int64_t stoi64 (char* str); // 文字列型の数値を受け取って int32_t型の数値を返す
+    void     restore();
     
     // Variable mode:
     // 
@@ -128,6 +146,8 @@ public:
     int       verbosity;
     // Solver.ccだけでなくここも必要？
     FILE*     proof_file;
+    char*     restore_file;
+    char*     prob;               // 問題の名前(候補選択で問題を解く際に使う)
     double    var_decay;
     double    clause_decay;
     double    random_var_freq;
@@ -153,6 +173,8 @@ public:
     uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts;
     uint64_t dec_vars, num_clauses, num_learnts, clauses_literals, learnts_literals, max_literals, tot_literals;
 
+
+// pretectedの中の変数にはおそらくSolver.ccからでも介入できる
 protected:
 
     // Helper structures:
@@ -160,6 +182,7 @@ protected:
     struct VarData { CRef reason; int level; };
     static inline VarData mkVarData(CRef cr, int l){ VarData d = {cr, l}; return d; }
 
+    // 構造体の中の関数宣言は実際に変数を定義するときに使う？
     struct Watcher {
         CRef cref;
         Lit  blocker;
@@ -168,6 +191,7 @@ protected:
         bool operator!=(const Watcher& w) const { return cref != w.cref; }
     };
 
+    // operator()は"変数(引数)"で関数として呼び出しができる
     struct WatcherDeleted
     {
         const ClauseAllocator& ca;
@@ -187,6 +211,11 @@ protected:
         ShrinkStackElem(uint32_t _i, Lit _l) : i(_i), l(_l){}
     };
 
+    // 特定のタイミングで介入する時に使う変数
+    int                 next_intervention; // 次の介入が何回目の介入か(次の介入のタイミングや次の介入の際にどの変数を選ぶかを決める)   
+    vec<int>            usr_interventions; // ユーザが介入して変数選択を決めたり重みを変えたりするタイミング(何回目の変数選択か)(先頭要素に今何個目を参照するかを入れる)
+    vec<Var>            usr_picks;         // 各タイミングでユーザがどの変数を選択するか
+    vec<Var>            candidates;         // 候補の変数を入れておく
     // Solver state:
     //
     vec<CRef>           clauses;          // List of problem clauses.
@@ -195,6 +224,7 @@ protected:
     vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
     vec<Lit>            assumptions;      // Current set of assumptions provided to solve by the user.
 
+    // VMap->IntMap
     VMap<double>        activity;         // A heuristic measurement of the activity of a variable.
     VMap<lbool>         assigns;          // The current assignments.
     VMap<char>          polarity;         // The preferred polarity of each variable.
@@ -241,6 +271,13 @@ protected:
     // Main internal methods:
     //
     void     insertVarOrder   (Var x);                                                 // Insert a variable in the decision order priority queue.
+    void     getCandidates();                                           // 候補を決める;
+    void     writeSubIntervention(Var candidate);                                      // 今のタイミングまでの介入の情報を今のタイミングの選択部分(-2)を候補に変えた上でファイルに書き込む
+    void     execMinisat(char* prob, char* proof, char* intervention);                 // 問題, ファイル名, 介入ファイルを決めてminisatを実行する(追加オプションがあるならその都度コード書き換えて)
+    void     print_result(char* result);                                               // 解いた結果から必要な情報を出力する
+    void     execDrattrim(char* prob, char* proof, char* trimed_proof);                // 問題, 証明, 短縮後の証明を決めてdrat-trimを実行する(追加オプションがあるならその都度コード書き換えて)
+    int      getProofLength(char* proof);                                              // 証明を受け取って長さを返す
+    Var      selectFromCandidateVars();                                                // 候補を選んで候補を選んでその中から一番有効な変数を選択する
     Lit      pickBranchLit    ();                                                      // Return the next decision variable.
     void     newDecisionLevel ();                                                      // Begins a new decision level.
     void     uncheckedEnqueue (Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
@@ -275,6 +312,7 @@ protected:
 
     // Misc:
     //
+    // 定義の後にconstをつけるとメンバ変数を変更できないようにする
     int      decisionLevel    ()      const; // Gives the current decisionlevel.
     uint32_t abstractLevel    (Var x) const; // Used to represent an abstraction of sets of decision levels.
     CRef     reason           (Var x) const;
@@ -301,6 +339,7 @@ protected:
 
 //=================================================================================================
 // Implementation of inline methods:
+// インライン関数はここで定義する（solver.ccでは定義しない）
 
 inline CRef Solver::reason(Var x) const { return vardata[x].reason; }
 inline int  Solver::level (Var x) const { return vardata[x].level; }

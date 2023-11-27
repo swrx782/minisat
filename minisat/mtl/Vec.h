@@ -39,10 +39,10 @@ template<class T, class _Size = int>
 class vec {
 public:
     typedef _Size Size;
-private:
+public:
     T*   data;
-    Size sz;
-    Size cap;
+    mutable Size sz;
+    mutable Size cap;
 
     // Don't allow copying (error prone):
     vec<T>&  operator=(vec<T>& other);
@@ -53,6 +53,7 @@ private:
 public:
     // Constructors:
     vec()                        : data(NULL), sz(0), cap(0)    { }
+    // explicitをつけるとコピー初期化、暗黙の型変換の2つができないようになる
     explicit vec(Size size)      : data(NULL), sz(0), cap(0)    { growTo(size); }
     vec(Size size, const T& pad) : data(NULL), sz(0), cap(0)    { growTo(size, pad); }
    ~vec()                                                       { clear(true); }
@@ -66,6 +67,7 @@ public:
     void     shrink_  (Size nelems)  { assert(nelems <= sz); sz -= nelems; }
     int      capacity (void) const   { return cap; }
     void     capacity (Size min_cap);
+    // growTo:配列をsize個分に拡張する(その際にcapacityを使う)
     void     growTo   (Size size);
     void     growTo   (Size size, const T& pad);
     void     clear    (bool dealloc = false);
@@ -73,7 +75,7 @@ public:
     // Stack interface:
     void     push  (void)              { if (sz == cap) capacity(sz+1); new (&data[sz]) T(); sz++; }
     //void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); data[sz++] = elem; }
-    void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); new (&data[sz++]) T(elem); }
+    void     push  (const T& elem)     { if (sz == cap) capacity(sz+1); new (&data[sz++]) T(elem);}
     void     push_ (const T& elem)     { assert(sz < cap); data[sz++] = elem; }
     void     pop   (void)              { assert(sz > 0); sz--, data[sz].~T(); }
     // NOTE: it seems possible that overflow can happen in the 'sz+1' expression of 'push()', but
@@ -91,6 +93,7 @@ public:
     // Duplicatation (preferred instead):
     void copyTo(vec<T>& copy) const { copy.clear(); copy.growTo(sz); for (Size i = 0; i < sz; i++) copy[i] = data[i]; }
     void moveTo(vec<T>& dest) { dest.clear(true); dest.data = data; dest.sz = sz; dest.cap = cap; data = NULL; sz = 0; cap = 0; }
+
 };
 
 
